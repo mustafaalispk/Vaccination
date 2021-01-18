@@ -1,4 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using RabbitMQ.Client;
+using System;
+using System.Text;
 using System.Threading;
 using Vaccination.Registration.Data;
 using Vaccination.Registration.Models.Dto;
@@ -17,19 +21,29 @@ namespace Vaccination.Registration.Controllers
         [HttpPost]
         public IActionResult CreateRegistration(CreateRegistrationDto createRegistrationDto)
         {
-            Thread.Sleep(3000);
-
-            var vaccination = new Models.Domain.Vaccination
+            var factory = new ConnectionFactory
             {
-                FirstName = createRegistrationDto.FirstName,
-                LastName = createRegistrationDto.LastName,
-                SocialSecurityNumber = createRegistrationDto.SocialSecurityNumber
+                Uri = new Uri("amqp://guest:guest@localhost:5672")
             };
-            context.Vaccinations.Add(vaccination);
 
-            context.SaveChanges();
+            using var connection = factory.CreateConnection();
 
-            return Ok(); // 201 OK
+            using var channel = connection.CreateModel();
+
+            channel.QueueDeclare(queue: "vaccinations",
+                                 durable: false,
+                                 exclusive: false,
+                                 autoDelete: false,
+                                 arguments: null
+                                 );
+            var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(createRegistrationDto));
+
+            channel.BasicPublish(exchange: "",
+                routingKey: "vaccinations",
+                basicProperties: null,
+                body: body
+                );
+            return Accepted(); // 202 Accepted
 
         }
     }
