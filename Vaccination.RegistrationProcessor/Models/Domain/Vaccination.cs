@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Vaccination.Registration.Models.Domain
+﻿namespace Vaccination.RegistrationProcessor.Models.Domain
 {
     public class Vaccination
     {
